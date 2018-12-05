@@ -99,6 +99,10 @@ struct _GstWebkitSrc
   guint8* data;
   gboolean enabled;
   gboolean ready;
+  guint8 fps;
+  guint width;
+  guint height;
+  gboolean updated;
 };
 
 struct _GstWebkitSrcClass

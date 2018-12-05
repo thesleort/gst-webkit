@@ -89,7 +89,10 @@ enum
 {
   PROP_0,
   PROP_URL,
-  PROP_ENABLED
+  PROP_ENABLED,
+  PROP_FPS,
+  PROP_WIDTH,
+  PROP_HEIGHT
 };
 
 /* the capabilities of the inputs and outputs.
@@ -158,6 +161,18 @@ gst_webkit_src_class_init (GstWebkitSrcClass * klass)
   g_object_class_install_property (gobject_class, PROP_ENABLED,
       g_param_spec_boolean("enabled", "enabled", "enabled",
           TRUE, G_PARAM_READWRITE));
+
+  g_object_class_install_property (gobject_class, PROP_FPS,
+      g_param_spec_int ("fps", "FPS", "frames per second", 1, 30,
+          1, G_PARAM_READWRITE));
+
+  g_object_class_install_property (gobject_class, PROP_WIDTH,
+      g_param_spec_int ("width", "width", "browser width", 1, 1920,
+          1280, G_PARAM_READWRITE));
+
+  g_object_class_install_property (gobject_class, PROP_HEIGHT,
+      g_param_spec_int ("height", "height", "browser height", 1, 1080,
+          720, G_PARAM_READWRITE));
 
   gst_element_class_set_details_simple(gstelement_class,
     "WebkitSrc",
@@ -256,8 +271,22 @@ gst_webkit_src_fill (GstPushSrc * psrc, GstBuffer * buffer)
     goto not_negotiated;
 
 
-  if (!gst_video_frame_map (&frame, &src->info, buffer, GST_MAP_WRITE))
+  if (!gst_video_frame_map (&frame, &src->info, buffer, GST_MAP_WRITE)) {
+  
+/*	 GstMapInfo info;
+	if (!gst_buffer_map (buffer, &info, GST_MAP_WRITE)) {
+	
+	    GST_DEBUG ("Neither buffer map");
+	} else {
+		  if (!gst_video_frame_map (&frame, &src->info, buffer, GST_MAP_WRITE)) {
+			    GST_DEBUG ("Neither f map");
+		  }
+	
+	}
+	
+*/  
     goto invalid_frame;
+  }
 
 
   GST_BUFFER_PTS (buffer) =
@@ -276,10 +305,27 @@ gst_webkit_src_fill (GstPushSrc * psrc, GstBuffer * buffer)
 
 
   GST_OBJECT_LOCK (src);
-  if (src->ready){
-    GST_DEBUG ("Copy buffer -> box %d %d ", size, 1280*720*4* sizeof(guint8));
-    orc_memcpy (pixels, src->data, size);
+  if ((src->ready)&&(src->updated))
+  {
+    GST_DEBUG ("Copy buffer (%dx%d) vs (%d, %d) -> box, %d vs %d ", src->width, src->height, width, height, size, src->width*src->height*4* sizeof(guint8));
+//    orc_memcpy (pixels, src->data, size);
+
+	if (src->n_frames==0) {
+		//firstly just create empty fullframe
+		  memset(pixels, 0, size);
+	} else {
+
+		if (width==src->width) {
+		    orc_memcpy (pixels, src->data, src->width*src->height*4* sizeof(guint8) );
+		} else {
+			for (guint hi=0;hi<src->height;hi++) {
+			    orc_memcpy (	pixels+hi*width*4*sizeof(guint8), src->data+hi*src->width*4*sizeof(guint8), src->width*4* sizeof(guint8) );
+			}
+		}
+	}
+	
     GST_DEBUG ("End copy -> box");
+	src->updated = FALSE;
 
   }
   GST_OBJECT_UNLOCK (src);
@@ -321,16 +367,20 @@ invalid_frame:
 static gboolean gst_webkit_src_load_webkit_ready (gpointer psrc)
 {
 
+    GST_DEBUG ("WebKit ready callback");
     GstWebkitSrc *src = GST_WEBKIT_SRC (psrc);
     GST_OBJECT_LOCK (src);
     if (src->enabled){
       GdkPixbuf* pixbuf = gtk_offscreen_window_get_pixbuf(src->window);
       GST_DEBUG ("Copy webkit -> buffer");
-      orc_memcpy(src->data, gdk_pixbuf_read_pixels(pixbuf), 1280*720*4*sizeof(guint8));
+      orc_memcpy(src->data, gdk_pixbuf_read_pixels(pixbuf), src->width*src->height*4*sizeof(guint8));
+//      orc_memcpy(src->data, gdk_pixbuf_read_pixels(pixbuf), 1280*720*4*sizeof(guint8));
+		src->updated = TRUE;
       GST_DEBUG ("End webkit -> buffer");
       g_object_unref(pixbuf);
     } else{
-      memset(src->data, 0, 1280*720*4*sizeof(guint8));
+      memset(src->data, 0, (src->width)*(src->height)*4*sizeof(guint8));
+//      memset(src->data, 0, 1280*720*4*sizeof(guint8));
     }
 
   GST_OBJECT_UNLOCK (src);
@@ -368,45 +418,17 @@ gst_webkit_src_init (GstWebkitSrc * src)
 
   static const GdkRGBA transparent = {255, 255, 0, 0};
 
-/*  GdkScreen *screen = gtk_window_get_screen (GTK_WINDOW (src->window));
+  GdkScreen *screen = gtk_window_get_screen (GTK_WINDOW (src->window));
   GdkVisual *rgba_visual = gdk_screen_get_rgba_visual (screen);
 
   if (!rgba_visual)
        return;
 
-   gtk_widget_set_visual (GTK_WIDGET (src->window), rgba_visual);*/
-   //gtk_widget_set_app_paintable (GTK_WIDGET (src->window), TRUE);
-  //webkit_web_view_set_background_color(src->web_view, &transparent);
-
-  gtk_window_set_default_size(GTK_WINDOW(src->window), 1280, 720);
-  gtk_container_add(GTK_CONTAINER(src->window), GTK_WIDGET(src->web_view));
-  GST_DEBUG ("COLOR SET");
+   gtk_widget_set_visual (GTK_WIDGET (src->window), rgba_visual);
+   gtk_widget_set_app_paintable (GTK_WIDGET (src->window), TRUE);
+  webkit_web_view_set_background_color(src->web_view, &transparent);
 
 
-
-  WebKitSettings *settings = webkit_settings_new ();
-  webkit_settings_set_auto_load_images(settings, TRUE);
-  webkit_settings_set_enable_javascript(settings, TRUE);
-  webkit_settings_set_enable_webgl(settings, FALSE);
-  webkit_settings_set_allow_modal_dialogs(settings, FALSE);
-  webkit_settings_set_javascript_can_access_clipboard(settings, FALSE);
-  webkit_settings_set_enable_page_cache(settings, FALSE);
-  webkit_settings_set_enable_accelerated_2d_canvas(settings, TRUE);
-  webkit_settings_set_enable_write_console_messages_to_stdout(settings, TRUE);
-  webkit_settings_set_enable_plugins (settings, FALSE);
-  webkit_settings_set_hardware_acceleration_policy(settings, WEBKIT_HARDWARE_ACCELERATION_POLICY_NEVER);
-  webkit_web_view_set_settings (WEBKIT_WEB_VIEW(src->web_view), settings);
-
-
-  src->data = malloc(4*1280*720*sizeof(guint8));
-
-  webkit_web_context_set_cache_model(webkit_web_context_get_default(), WEBKIT_CACHE_MODEL_DOCUMENT_VIEWER);
-
-  gtk_widget_show_all(src->window);
-
-  g_timeout_add(50, gst_webkit_src_load_webkit_ready, (gpointer) src);
-
-  GST_DEBUG ("End initing gtk offscreen");
 
 }
 
@@ -424,6 +446,7 @@ static void
 gst_webkit_src_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec)
 {
+//  GST_DEBUG ("Prop set: ID: %d", prop_id);
   GstWebkitSrc *src = GST_WEBKIT_SRC (object);
 
   switch (prop_id) {
@@ -437,6 +460,21 @@ gst_webkit_src_set_property (GObject * object, guint prop_id,
       case PROP_ENABLED:
         GST_OBJECT_LOCK(src);
         src->enabled = g_value_get_boolean(value);
+        GST_OBJECT_UNLOCK(src);
+        break;
+      case PROP_FPS:
+        GST_OBJECT_LOCK(src);
+        src->fps = g_value_get_int(value);
+        GST_OBJECT_UNLOCK(src);
+        break;
+      case PROP_WIDTH:
+        GST_OBJECT_LOCK(src);
+        src->width = g_value_get_int(value);
+        GST_OBJECT_UNLOCK(src);
+        break;
+      case PROP_HEIGHT:
+        GST_OBJECT_LOCK(src);
+        src->height = g_value_get_int(value);
         GST_OBJECT_UNLOCK(src);
         break;
     default:
@@ -457,6 +495,15 @@ gst_webkit_src_get_property (GObject * object, guint prop_id,
       break;
       case PROP_ENABLED:
         g_value_set_boolean(value, filter->enabled);
+        break;
+      case PROP_FPS:
+        g_value_set_int(value, filter->fps);
+        break;
+      case PROP_WIDTH:
+        g_value_set_int(value, filter->width);
+        break;
+      case PROP_HEIGHT:
+        g_value_set_int(value, filter->height);
         break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -494,6 +541,41 @@ gst_webkit_src_start (GstBaseSrc * basesrc)
   GstWebkitSrc *src;
 
   src = GST_WEBKIT_SRC (basesrc);
+
+	
+  gtk_window_set_default_size(GTK_WINDOW(src->window), src->width, src->height);
+//  gtk_window_set_default_size(GTK_WINDOW(src->window), 1280, 320);
+  gtk_container_add(GTK_CONTAINER(src->window), GTK_WIDGET(src->web_view));
+  GST_DEBUG ("COLOR SET");
+
+  GST_DEBUG ("Init size: %d x %d, FPS:  %d", src->width, src->height, src->fps);
+
+  WebKitSettings *settings = webkit_settings_new ();
+  webkit_settings_set_auto_load_images(settings, TRUE);
+  webkit_settings_set_enable_javascript(settings, TRUE);
+  webkit_settings_set_enable_webgl(settings, FALSE);
+  webkit_settings_set_allow_modal_dialogs(settings, FALSE);
+  webkit_settings_set_javascript_can_access_clipboard(settings, FALSE);
+  webkit_settings_set_enable_page_cache(settings, FALSE);
+  webkit_settings_set_enable_accelerated_2d_canvas(settings, TRUE);
+  webkit_settings_set_enable_write_console_messages_to_stdout(settings, TRUE);
+  webkit_settings_set_enable_plugins (settings, FALSE);
+  webkit_settings_set_hardware_acceleration_policy(settings, WEBKIT_HARDWARE_ACCELERATION_POLICY_NEVER);
+  webkit_web_view_set_settings (WEBKIT_WEB_VIEW(src->web_view), settings);
+
+
+  src->data = malloc(4*(src->width)*(src->height)*sizeof(guint8));
+//  src->data = malloc(4*1280*720*sizeof(guint8));
+
+  webkit_web_context_set_cache_model(webkit_web_context_get_default(), WEBKIT_CACHE_MODEL_DOCUMENT_VIEWER);
+
+  gtk_widget_show_all(src->window);
+
+  memset(src->data, 0, (src->width)*(src->height)*4*sizeof(guint8));
+  src->updated = TRUE;
+//  memset(src->data, 0, 1280*720*4*sizeof(guint8));
+  g_timeout_add( (src->fps>0)&&(src->fps<30)?1000/src->fps:1000 , gst_webkit_src_load_webkit_ready, (gpointer) src);
+
 
   return TRUE;
 }
