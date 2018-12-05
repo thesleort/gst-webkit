@@ -60,43 +60,41 @@ G_BEGIN_DECLS
 #define GST_TYPE_WEBKIT_SRC \
   (gst_webkit_src_get_type())
 #define GST_WEBKIT_SRC(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_WEBKIT_SRC,GstWebkitSrc))
+  (G_TYPE_CHECK_INSTANCE_CAST((obj), GST_TYPE_WEBKIT_SRC, GstWebkitSrc))
 #define GST_WEBKIT_SRC_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_WEBKIT_SRC,GstWebkitSrcClass))
+  (G_TYPE_CHECK_CLASS_CAST((klass), GST_TYPE_WEBKIT_SRC, GstWebkitSrcClass))
 #define GST_IS_WEBKIT_SRC(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_WEBKIT_SRC))
+  (G_TYPE_CHECK_INSTANCE_TYPE((obj), GST_TYPE_WEBKIT_SRC))
 #define GST_IS_WEBKIT_SRC_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_WEBKIT_SRC))
+  (G_TYPE_CHECK_CLASS_TYPE((klass), GST_TYPE_WEBKIT_SRC))
 
-typedef struct _GstWebkitSrc      GstWebkitSrc;
+typedef struct _GstWebkitSrc GstWebkitSrc;
 typedef struct _GstWebkitSrcClass GstWebkitSrcClass;
 
-struct _GstWebkitSrc
-{
-  GstPushSrc     element;
+struct _GstWebkitSrc {
+  GstPushSrc element;
   GstPad *sinkpad, *srcpad;
 
-  GstBuffer	*parent;
-  guint		parentsize;
-  guint		parentoffset;
+  GstBuffer *parent;
+  guint parentsize;
+  guint parentoffset;
 
-  const gchar* url;
+  const gchar *url;
   WebKitWebView *web_view;
   GtkWidget *window;
 
-  GstVideoInfo info; /* protected by the object or stream lock */
-  gint64 timestamp_offset;              /* base offset */
+  GstVideoInfo info;       /* protected by the object or stream lock */
+  gint64 timestamp_offset; /* base offset */
 
   /* previous caps running time and frames */
-  GstClockTime accum_rtime;              /* accumulated running_time */
-  gint64 accum_frames;                  /* accumulated frames */
-
+  GstClockTime accum_rtime; /* accumulated running_time */
+  gint64 accum_frames;      /* accumulated frames */
 
   /* running time and frames for current caps */
-  GstClockTime running_time;            /* total running time */
-  gint64 n_frames;                      /* total frames sent */
+  GstClockTime running_time; /* total running time */
+  gint64 n_frames;           /* total frames sent */
   gboolean reverse;
-  guint8* data;
+  guint8 *data;
   gboolean enabled;
   gboolean ready;
   guint8 fps;
@@ -105,12 +103,11 @@ struct _GstWebkitSrc
   gboolean updated;
 };
 
-struct _GstWebkitSrcClass
-{
+struct _GstWebkitSrcClass {
   GstPushSrcClass parent_class;
 };
 
-GType gst_webkit_src_get_type (void);
+GType gst_webkit_src_get_type(void);
 
 G_END_DECLS
 

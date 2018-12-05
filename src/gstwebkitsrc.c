@@ -57,17 +57,16 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#include <config.h>
 #endif
 
 #include <stdio.h>
 #include <string.h>
 
-
 #ifdef HAVE_ORC
 #include <orc/orc.h>
 #else
-#define orc_memcpy(a,b,c) memcpy(a,b,c)
+#define orc_memcpy(a, b, c) memcpy(a, b, c)
 #endif
 
 #include <gst/gst.h>
@@ -75,18 +74,16 @@
 #include <stdlib.h>
 #include "gstwebkitsrc.h"
 
-GST_DEBUG_CATEGORY_STATIC (gst_webkit_src_debug);
+GST_DEBUG_CATEGORY_STATIC(gst_webkit_src_debug);
 #define GST_CAT_DEFAULT gst_webkit_src_debug
 
 /* Filter signals and args */
-enum
-{
+enum {
   /* FILL ME */
   LAST_SIGNAL
 };
 
-enum
-{
+enum {
   PROP_0,
   PROP_URL,
   PROP_URI,
@@ -100,46 +97,43 @@ enum
  *
  * describe the real formats here.
  */
-static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE ("src",
-    GST_PAD_SRC,
-    GST_PAD_ALWAYS,
-    GST_STATIC_CAPS ("video/x-raw,"
-        "format=(string){RGBA},"
-        "width=(int){1280},height=(int){720}," "framerate=(fraction){25/1}")
-    );
+static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE("src",
+                                                                  GST_PAD_SRC,
+                                                                  GST_PAD_ALWAYS,
+                                                                  GST_STATIC_CAPS("video/x-raw,"
+                                                                                  "format=(string){RGBA},"
+                                                                                  "width=(int){1280},height=(int){720},"
+                                                                                  "framerate=(fraction){25/1}"));
 
 #define gst_webkit_src_parent_class parent_class
-G_DEFINE_TYPE (GstWebkitSrc, gst_webkit_src, GST_TYPE_PUSH_SRC);
+G_DEFINE_TYPE(GstWebkitSrc, gst_webkit_src, GST_TYPE_PUSH_SRC);
 
-static void gst_webkit_src_set_property (GObject * object, guint prop_id,
-    const GValue * value, GParamSpec * pspec);
-static void gst_webkit_src_get_property (GObject * object, guint prop_id,
-    GValue * value, GParamSpec * pspec);
+static void gst_webkit_src_set_property(GObject *object, guint prop_id,
+                                        const GValue *value, GParamSpec *pspec);
+static void gst_webkit_src_get_property(GObject *object, guint prop_id,
+                                        GValue *value, GParamSpec *pspec);
 
-static gboolean gst_webkit_src_start (GstBaseSrc * basesrc);
-static gboolean gst_webkit_src_stop (GstBaseSrc * basesrc);
-static gboolean gst_webkit_src_is_seekable (GstBaseSrc * basesrc);
+static gboolean gst_webkit_src_start(GstBaseSrc *basesrc);
+static gboolean gst_webkit_src_stop(GstBaseSrc *basesrc);
+static gboolean gst_webkit_src_is_seekable(GstBaseSrc *basesrc);
 
-
-static GstFlowReturn gst_webkit_src_fill (GstPushSrc * psrc, GstBuffer * buffer);
+static GstFlowReturn gst_webkit_src_fill(GstPushSrc *psrc, GstBuffer *buffer);
 
 static gboolean
-gst_webkit_src_setcaps (GstBaseSrc * bsrc, GstCaps * caps);
+gst_webkit_src_setcaps(GstBaseSrc *bsrc, GstCaps *caps);
 
-static gboolean gst_webkit_src_query (GstBaseSrc * bsrc, GstQuery * query);
+static gboolean gst_webkit_src_query(GstBaseSrc *bsrc, GstQuery *query);
 
 static void
-  gst_webkit_src_get_times (GstBaseSrc * basesrc, GstBuffer * buffer,
-    GstClockTime * start, GstClockTime * end);
+gst_webkit_src_get_times(GstBaseSrc *basesrc, GstBuffer *buffer,
+                         GstClockTime *start, GstClockTime *end);
 
 static gboolean
-    gst_webkit_src_do_seek (GstBaseSrc * bsrc, GstSegment * segment);
-
+gst_webkit_src_do_seek(GstBaseSrc *bsrc, GstSegment *segment);
 
 /* initialize the webkitsrc's class */
 static void
-gst_webkit_src_class_init (GstWebkitSrcClass * klass)
-{
+gst_webkit_src_class_init(GstWebkitSrcClass *klass) {
   //
 
   GObjectClass *gobject_class;
@@ -147,138 +141,124 @@ gst_webkit_src_class_init (GstWebkitSrcClass * klass)
   GstBaseSrcClass *gstbase_src_class;
   GstPushSrcClass *gstpush_src_class;
 
-  gobject_class = (GObjectClass *) klass;
-  gstelement_class = (GstElementClass *) klass;
-  gstbase_src_class = (GstBaseSrcClass *) klass;
-  gstpush_src_class = (GstPushSrcClass *) klass;
+  gobject_class = (GObjectClass *)klass;
+  gstelement_class = (GstElementClass *)klass;
+  gstbase_src_class = (GstBaseSrcClass *)klass;
+  gstpush_src_class = (GstPushSrcClass *)klass;
 
   gobject_class->set_property = gst_webkit_src_set_property;
   gobject_class->get_property = gst_webkit_src_get_property;
 
-  g_object_class_install_property (gobject_class, PROP_URL,
-      g_param_spec_string ("url", "URL", "url page",
-          "", G_PARAM_READWRITE));
+  g_object_class_install_property(gobject_class, PROP_URL,
+                                  g_param_spec_string("url", "URL", "url page",
+                                                      "", G_PARAM_READWRITE));
 
-  g_object_class_install_property (gobject_class, PROP_URI,
-      g_param_spec_string ("uri", "URI", "uri page",
-          "", G_PARAM_READWRITE));
+  g_object_class_install_property(gobject_class, PROP_URI,
+                                  g_param_spec_string("uri", "URI", "uri page",
+                                                      "", G_PARAM_READWRITE));
 
-  g_object_class_install_property (gobject_class, PROP_ENABLED,
-      g_param_spec_boolean("enabled", "enabled", "enabled",
-          TRUE, G_PARAM_READWRITE));
+  g_object_class_install_property(gobject_class, PROP_ENABLED,
+                                  g_param_spec_boolean("enabled", "enabled", "enabled",
+                                                       TRUE, G_PARAM_READWRITE));
 
-  g_object_class_install_property (gobject_class, PROP_FPS,
-      g_param_spec_int ("fps", "FPS", "frames per second", 1, 30,
-          1, G_PARAM_READWRITE));
+  g_object_class_install_property(gobject_class, PROP_FPS,
+                                  g_param_spec_int("fps", "FPS", "frames per second", 1, 30,
+                                                   1, G_PARAM_READWRITE));
 
-  g_object_class_install_property (gobject_class, PROP_WIDTH,
-      g_param_spec_int ("width", "width", "browser width", 1, 1920,
-          1280, G_PARAM_READWRITE));
+  g_object_class_install_property(gobject_class, PROP_WIDTH,
+                                  g_param_spec_int("width", "width", "browser width", 1, 1920,
+                                                   1280, G_PARAM_READWRITE));
 
-  g_object_class_install_property (gobject_class, PROP_HEIGHT,
-      g_param_spec_int ("height", "height", "browser height", 1, 1080,
-          720, G_PARAM_READWRITE));
+  g_object_class_install_property(gobject_class, PROP_HEIGHT,
+                                  g_param_spec_int("height", "height", "browser height", 1, 1080,
+                                                   720, G_PARAM_READWRITE));
 
   gst_element_class_set_details_simple(gstelement_class,
-    "WebkitSrc",
-    "Html / css / js renderer element",
-    "Html / css / js renderer element",
-    "Ludovic Bouguerra <ludovic.bouguerra@kalyzee.com>");
+                                       "WebkitSrc",
+                                       "Html / css / js renderer element",
+                                       "Html / css / js renderer element",
+                                       "Ludovic Bouguerra <ludovic.bouguerra@kalyzee.com>");
 
-  gst_element_class_add_pad_template (gstelement_class,
-  gst_static_pad_template_get (&src_factory));
+  gst_element_class_add_pad_template(gstelement_class,
+                                     gst_static_pad_template_get(&src_factory));
 
-  gstbase_src_class->is_seekable = GST_DEBUG_FUNCPTR (gst_webkit_src_is_seekable);
-  gstbase_src_class->start = GST_DEBUG_FUNCPTR (gst_webkit_src_start);
-  gstbase_src_class->stop = GST_DEBUG_FUNCPTR (gst_webkit_src_stop);
-  gstpush_src_class->fill = GST_DEBUG_FUNCPTR (gst_webkit_src_fill);
+  gstbase_src_class->is_seekable = GST_DEBUG_FUNCPTR(gst_webkit_src_is_seekable);
+  gstbase_src_class->start = GST_DEBUG_FUNCPTR(gst_webkit_src_start);
+  gstbase_src_class->stop = GST_DEBUG_FUNCPTR(gst_webkit_src_stop);
+  gstpush_src_class->fill = GST_DEBUG_FUNCPTR(gst_webkit_src_fill);
   gstbase_src_class->set_caps = GST_DEBUG_FUNCPTR(gst_webkit_src_setcaps);
   gstbase_src_class->query = GST_DEBUG_FUNCPTR(gst_webkit_src_query);
   gstbase_src_class->get_times = GST_DEBUG_FUNCPTR(gst_webkit_src_get_times);
   gstbase_src_class->do_seek = GST_DEBUG_FUNCPTR(gst_webkit_src_do_seek);
-
 }
 
-
 static gboolean
-gst_webkit_src_query (GstBaseSrc * bsrc, GstQuery * query)
-{
+gst_webkit_src_query(GstBaseSrc *bsrc, GstQuery *query) {
   gboolean res;
   GstWebkitSrc *src;
 
   src = GST_WEBKIT_SRC(bsrc);
 
-  switch (GST_QUERY_TYPE (query)) {
-    case GST_QUERY_CONVERT:
-    {
-      GstFormat src_fmt, dest_fmt;
-      gint64 src_val, dest_val;
+  switch (GST_QUERY_TYPE(query)) {
+  case GST_QUERY_CONVERT: {
+    GstFormat src_fmt, dest_fmt;
+    gint64 src_val, dest_val;
 
-      gst_query_parse_convert (query, &src_fmt, &src_val, &dest_fmt, &dest_val);
-      res =
-          gst_video_info_convert (&src->info, src_fmt, src_val, dest_fmt,
-          &dest_val);
-      gst_query_set_convert (query, src_fmt, src_val, dest_fmt, dest_val);
-      break;
-    }
-    default:
-      res = GST_BASE_SRC_CLASS (parent_class)->query (bsrc, query);
-      break;
+    gst_query_parse_convert(query, &src_fmt, &src_val, &dest_fmt, &dest_val);
+    res =
+        gst_video_info_convert(&src->info, src_fmt, src_val, dest_fmt,
+                               &dest_val);
+    gst_query_set_convert(query, src_fmt, src_val, dest_fmt, dest_val);
+    break;
+  }
+  default:
+    res = GST_BASE_SRC_CLASS(parent_class)->query(bsrc, query);
+    break;
   }
   return res;
 }
 
-
 static gboolean
-gst_webkit_src_setcaps (GstBaseSrc * bsrc, GstCaps * caps)
-{
+gst_webkit_src_setcaps(GstBaseSrc *bsrc, GstCaps *caps) {
 
-  GST_DEBUG ("*****Entering set caps*****");
+  GST_DEBUG("*****Entering set caps*****");
   const GstStructure *structure;
-  structure = gst_caps_get_structure (caps, 0);
-  GstWebkitSrc *src = GST_WEBKIT_SRC (bsrc);
+  structure = gst_caps_get_structure(caps, 0);
+  GstWebkitSrc *src = GST_WEBKIT_SRC(bsrc);
   GstVideoInfo info;
 
-  if (gst_structure_has_name (structure, "video/x-raw")) {
+  if (gst_structure_has_name(structure, "video/x-raw")) {
     /* we can use the parsing code */
-    if (!gst_video_info_from_caps (&info, caps))
+    if (!gst_video_info_from_caps(&info, caps))
       goto parse_failed;
 
-  }else{
+  } else {
     goto parse_failed;
   }
-
-
 
   src->info = info;
 
   return TRUE;
 
-
 parse_failed:
   return FALSE;
-
 }
 
-
 static GstFlowReturn
-gst_webkit_src_fill (GstPushSrc * psrc, GstBuffer * buffer)
-{
+gst_webkit_src_fill(GstPushSrc *psrc, GstBuffer *buffer) {
   GstWebkitSrc *src;
   GstVideoFrame frame;
   GstClockTime next_time;
 
-  src = GST_WEBKIT_SRC (psrc);
+  src = GST_WEBKIT_SRC(psrc);
 
-
-  if (G_UNLIKELY (GST_VIDEO_INFO_FORMAT (&src->info) ==
-          GST_VIDEO_FORMAT_UNKNOWN))
+  if (G_UNLIKELY(GST_VIDEO_INFO_FORMAT(&src->info) ==
+                 GST_VIDEO_FORMAT_UNKNOWN))
     goto not_negotiated;
 
+  if (!gst_video_frame_map(&frame, &src->info, buffer, GST_MAP_WRITE)) {
 
-  if (!gst_video_frame_map (&frame, &src->info, buffer, GST_MAP_WRITE)) {
-  
-/*	 GstMapInfo info;
+    /*	 GstMapInfo info;
 	if (!gst_buffer_map (buffer, &info, GST_MAP_WRITE)) {
 	
 	    GST_DEBUG ("Neither buffer map");
@@ -289,112 +269,97 @@ gst_webkit_src_fill (GstPushSrc * psrc, GstBuffer * buffer)
 	
 	}
 	
-*/  
+*/
     goto invalid_frame;
   }
 
+  GST_BUFFER_PTS(buffer) =
+      src->accum_rtime + src->timestamp_offset + src->running_time;
+  GST_BUFFER_DTS(buffer) = GST_CLOCK_TIME_NONE;
 
-  GST_BUFFER_PTS (buffer) =
-        src->accum_rtime + src->timestamp_offset + src->running_time;
-  GST_BUFFER_DTS (buffer) = GST_CLOCK_TIME_NONE;
-
-
-  guint8 *pixels = GST_VIDEO_FRAME_PLANE_DATA (&frame, 0);
-  guint stride = GST_VIDEO_FRAME_PLANE_STRIDE (&frame, 0);
-  guint pixel_stride = GST_VIDEO_FRAME_COMP_PSTRIDE (&frame, 0);
-  guint width = GST_VIDEO_FRAME_WIDTH (&frame);
-  guint height = GST_VIDEO_FRAME_HEIGHT (&frame);
+  guint8 *pixels = GST_VIDEO_FRAME_PLANE_DATA(&frame, 0);
+  guint stride = GST_VIDEO_FRAME_PLANE_STRIDE(&frame, 0);
+  guint pixel_stride = GST_VIDEO_FRAME_COMP_PSTRIDE(&frame, 0);
+  guint width = GST_VIDEO_FRAME_WIDTH(&frame);
+  guint height = GST_VIDEO_FRAME_HEIGHT(&frame);
   gsize size = GST_VIDEO_FRAME_SIZE(&frame);
 
-  gst_object_sync_values (GST_OBJECT (psrc), GST_BUFFER_PTS (buffer));
+  gst_object_sync_values(GST_OBJECT(psrc), GST_BUFFER_PTS(buffer));
 
+  GST_OBJECT_LOCK(src);
+  if ((src->ready) && (src->updated)) {
+    GST_DEBUG("Copy buffer (%dx%d) vs (%d, %d) -> box, %d vs %d ", src->width, src->height, width, height, size, src->width * src->height * 4 * sizeof(guint8));
+    //    orc_memcpy (pixels, src->data, size);
 
-  GST_OBJECT_LOCK (src);
-  if ((src->ready)&&(src->updated))
-  {
-    GST_DEBUG ("Copy buffer (%dx%d) vs (%d, %d) -> box, %d vs %d ", src->width, src->height, width, height, size, src->width*src->height*4* sizeof(guint8));
-//    orc_memcpy (pixels, src->data, size);
+    if (src->n_frames == 0) {
+      //firstly just create empty fullframe
+      memset(pixels, 0, size);
+    } else {
 
-	if (src->n_frames==0) {
-		//firstly just create empty fullframe
-		  memset(pixels, 0, size);
-	} else {
+      if (width == src->width) {
+        orc_memcpy(pixels, src->data, src->width * src->height * 4 * sizeof(guint8));
+      } else {
+        for (guint hi = 0; hi < src->height; hi++) {
+          orc_memcpy(pixels + hi * width * 4 * sizeof(guint8), src->data + hi * src->width * 4 * sizeof(guint8), src->width * 4 * sizeof(guint8));
+        }
+      }
+    }
 
-		if (width==src->width) {
-		    orc_memcpy (pixels, src->data, src->width*src->height*4* sizeof(guint8) );
-		} else {
-			for (guint hi=0;hi<src->height;hi++) {
-			    orc_memcpy (	pixels+hi*width*4*sizeof(guint8), src->data+hi*src->width*4*sizeof(guint8), src->width*4* sizeof(guint8) );
-			}
-		}
-	}
-	
-    GST_DEBUG ("End copy -> box");
-	src->updated = FALSE;
-
+    GST_DEBUG("End copy -> box");
+    src->updated = FALSE;
   }
-  GST_OBJECT_UNLOCK (src);
+  GST_OBJECT_UNLOCK(src);
 
-  GST_BUFFER_OFFSET (buffer) = src->accum_frames + src->n_frames;
+  GST_BUFFER_OFFSET(buffer) = src->accum_frames + src->n_frames;
   src->n_frames++;
-  GST_BUFFER_OFFSET_END (buffer) = GST_BUFFER_OFFSET (buffer) + 1;
+  GST_BUFFER_OFFSET_END(buffer) = GST_BUFFER_OFFSET(buffer) + 1;
   if (src->info.fps_n) {
-    next_time = gst_util_uint64_scale_int (src->n_frames * GST_SECOND,
-        src->info.fps_d, src->info.fps_n);
-    GST_BUFFER_DURATION (buffer) = next_time - src->running_time;
+    next_time = gst_util_uint64_scale_int(src->n_frames * GST_SECOND,
+                                          src->info.fps_d, src->info.fps_n);
+    GST_BUFFER_DURATION(buffer) = next_time - src->running_time;
   } else {
     next_time = src->timestamp_offset;
     /* NONE means forever */
-    GST_BUFFER_DURATION (buffer) = GST_CLOCK_TIME_NONE;
+    GST_BUFFER_DURATION(buffer) = GST_CLOCK_TIME_NONE;
   }
 
   src->running_time = next_time;
 
-  gst_video_frame_unmap (&frame);
-
+  gst_video_frame_unmap(&frame);
 
   return GST_FLOW_OK;
 
-not_negotiated:
-    {
-      return GST_FLOW_NOT_NEGOTIATED;
-    }
+not_negotiated : {
+  return GST_FLOW_NOT_NEGOTIATED;
+}
 
-invalid_frame:
-  {
-    GST_DEBUG_OBJECT (src, "invalid frame");
-    return GST_FLOW_OK;
+invalid_frame : {
+  GST_DEBUG_OBJECT(src, "invalid frame");
+  return GST_FLOW_OK;
+}
+}
+
+static gboolean gst_webkit_src_load_webkit_ready(gpointer psrc) {
+
+  GST_DEBUG("WebKit ready callback");
+  GstWebkitSrc *src = GST_WEBKIT_SRC(psrc);
+  GST_OBJECT_LOCK(src);
+  if (src->enabled) {
+    GdkPixbuf *pixbuf = gtk_offscreen_window_get_pixbuf(src->window);
+    GST_DEBUG("Copy webkit -> buffer");
+    orc_memcpy(src->data, gdk_pixbuf_read_pixels(pixbuf), src->width * src->height * 4 * sizeof(guint8));
+    //      orc_memcpy(src->data, gdk_pixbuf_read_pixels(pixbuf), 1280*720*4*sizeof(guint8));
+    src->updated = TRUE;
+    GST_DEBUG("End webkit -> buffer");
+    g_object_unref(pixbuf);
+  } else {
+    memset(src->data, 0, (src->width) * (src->height) * 4 * sizeof(guint8));
+    //      memset(src->data, 0, 1280*720*4*sizeof(guint8));
   }
-}
 
-
-
-static gboolean gst_webkit_src_load_webkit_ready (gpointer psrc)
-{
-
-    GST_DEBUG ("WebKit ready callback");
-    GstWebkitSrc *src = GST_WEBKIT_SRC (psrc);
-    GST_OBJECT_LOCK (src);
-    if (src->enabled){
-      GdkPixbuf* pixbuf = gtk_offscreen_window_get_pixbuf(src->window);
-      GST_DEBUG ("Copy webkit -> buffer");
-      orc_memcpy(src->data, gdk_pixbuf_read_pixels(pixbuf), src->width*src->height*4*sizeof(guint8));
-//      orc_memcpy(src->data, gdk_pixbuf_read_pixels(pixbuf), 1280*720*4*sizeof(guint8));
-		src->updated = TRUE;
-      GST_DEBUG ("End webkit -> buffer");
-      g_object_unref(pixbuf);
-    } else{
-      memset(src->data, 0, (src->width)*(src->height)*4*sizeof(guint8));
-//      memset(src->data, 0, 1280*720*4*sizeof(guint8));
-    }
-
-  GST_OBJECT_UNLOCK (src);
+  GST_OBJECT_UNLOCK(src);
   return TRUE;
-
-
 }
-
-
 
 /* initialize the new element
  * instantiate pads and add them to element
@@ -402,44 +367,38 @@ static gboolean gst_webkit_src_load_webkit_ready (gpointer psrc)
  * initialize instance structure
  */
 static void
-gst_webkit_src_init (GstWebkitSrc * src)
-{
+gst_webkit_src_init(GstWebkitSrc *src) {
 
-  GST_DEBUG ("gtk init");
+  GST_DEBUG("gtk init");
   gtk_init(NULL, NULL);
   src->ready = TRUE;
 
-  GST_DEBUG ("init webview");
+  GST_DEBUG("init webview");
   src->web_view = WEBKIT_WEB_VIEW(webkit_web_view_new());
-  GST_DEBUG ("register load-changed callback");
+  GST_DEBUG("register load-changed callback");
 
-  GST_DEBUG ("Setting base SRC attributes Live / FORMAT");
-  gst_base_src_set_live((GstBaseSrc *) src, TRUE);
-  gst_base_src_set_format (GST_BASE_SRC (src), GST_FORMAT_TIME);
+  GST_DEBUG("Setting base SRC attributes Live / FORMAT");
+  gst_base_src_set_live((GstBaseSrc *)src, TRUE);
+  gst_base_src_set_format(GST_BASE_SRC(src), GST_FORMAT_TIME);
 
-  GST_DEBUG ("Initing GTK offscreen window");
-  src->window = gtk_offscreen_window_new ();
-
+  GST_DEBUG("Initing GTK offscreen window");
+  src->window = gtk_offscreen_window_new();
 
   static const GdkRGBA transparent = {255, 255, 0, 0};
 
-  GdkScreen *screen = gtk_window_get_screen (GTK_WINDOW (src->window));
-  GdkVisual *rgba_visual = gdk_screen_get_rgba_visual (screen);
+  GdkScreen *screen = gtk_window_get_screen(GTK_WINDOW(src->window));
+  GdkVisual *rgba_visual = gdk_screen_get_rgba_visual(screen);
 
   if (!rgba_visual)
-       return;
+    return;
 
-   gtk_widget_set_visual (GTK_WIDGET (src->window), rgba_visual);
-   gtk_widget_set_app_paintable (GTK_WIDGET (src->window), TRUE);
+  gtk_widget_set_visual(GTK_WIDGET(src->window), rgba_visual);
+  gtk_widget_set_app_paintable(GTK_WIDGET(src->window), TRUE);
   webkit_web_view_set_background_color(src->web_view, &transparent);
-
-
-
 }
 
-
-static gboolean gst_webkit_go_to_url_cb(gpointer object){
-  GstWebkitSrc *src = GST_WEBKIT_SRC (object);
+static gboolean gst_webkit_go_to_url_cb(gpointer object) {
+  GstWebkitSrc *src = GST_WEBKIT_SRC(object);
   GST_OBJECT_LOCK(src);
   webkit_web_view_load_uri(src->web_view, src->url);
   GST_OBJECT_UNLOCK(src);
@@ -448,149 +407,140 @@ static gboolean gst_webkit_go_to_url_cb(gpointer object){
 }
 
 static gboolean gst_webkit_go_to_file_cb(gpointer object) {
-	char *buffer = NULL;
-	FILE *fp;
-	guint size = 0;
+  char *buffer = NULL;
+  FILE *fp;
+  guint size = 0;
 
-	GstWebkitSrc *src = GST_WEBKIT_SRC(object);
-	GST_OBJECT_LOCK(src);
+  GstWebkitSrc *src = GST_WEBKIT_SRC(object);
+  GST_OBJECT_LOCK(src);
 
-	fp = fopen(src->url, "r");
+  fp = fopen(src->url, "r");
 
-	fseek(fp, 0, SEEK_END);
+  fseek(fp, 0, SEEK_END);
 
-	rewind(fp);
+  rewind(fp);
 
-	buffer = malloc((size + 1) * sizeof(*buffer));
+  buffer = malloc((size + 1) * sizeof(*buffer));
 
-	fread(buffer, size, 1, fp);
+  fread(buffer, size, 1, fp);
 
-	buffer[size] = '\0';
+  buffer[size] = '\0';
 
-	webkit_web_view_load_html(src->web_view, buffer, "/");
-	GST_OBJECT_UNLOCK(src);
+  webkit_web_view_load_html(src->web_view, buffer, "/");
+  GST_OBJECT_UNLOCK(src);
 
-	return FALSE;
+  return FALSE;
 }
 
 static void
-gst_webkit_src_set_property (GObject * object, guint prop_id,
-    const GValue * value, GParamSpec * pspec)
-{
-//  GST_DEBUG ("Prop set: ID: %d", prop_id);
-  GstWebkitSrc *src = GST_WEBKIT_SRC (object);
+gst_webkit_src_set_property(GObject *object, guint prop_id,
+                            const GValue *value, GParamSpec *pspec) {
+  //  GST_DEBUG ("Prop set: ID: %d", prop_id);
+  GstWebkitSrc *src = GST_WEBKIT_SRC(object);
 
   switch (prop_id) {
-    case PROP_URL:
-      GST_OBJECT_LOCK(src);
-      src->url = g_value_dup_string (value);
-      GST_OBJECT_UNLOCK(src);
-      g_idle_add(gst_webkit_go_to_url_cb, (gpointer) object);
+  case PROP_URL:
+    GST_OBJECT_LOCK(src);
+    src->url = g_value_dup_string(value);
+    GST_OBJECT_UNLOCK(src);
+    g_idle_add(gst_webkit_go_to_url_cb, (gpointer)object);
 
-      break;
-	case PROP_URI:
-	  GST_OBJECT_LOCK(src);
-	  src->url = g_value_dup_string(value);
-	  GST_OBJECT_UNLOCK(src);
-	  g_idle_add(gst_webkit_go_to_file_cb, (gpointer) object);
-	  break;
-      case PROP_ENABLED:
-        GST_OBJECT_LOCK(src);
-        src->enabled = g_value_get_boolean(value);
-        GST_OBJECT_UNLOCK(src);
-        break;
-      case PROP_FPS:
-        GST_OBJECT_LOCK(src);
-        src->fps = g_value_get_int(value);
-        GST_OBJECT_UNLOCK(src);
-        break;
-      case PROP_WIDTH:
-        GST_OBJECT_LOCK(src);
-        src->width = g_value_get_int(value);
-        GST_OBJECT_UNLOCK(src);
-        break;
-      case PROP_HEIGHT:
-        GST_OBJECT_LOCK(src);
-        src->height = g_value_get_int(value);
-        GST_OBJECT_UNLOCK(src);
-        break;
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-      break;
+    break;
+  case PROP_URI:
+    GST_OBJECT_LOCK(src);
+    src->url = g_value_dup_string(value);
+    GST_OBJECT_UNLOCK(src);
+    g_idle_add(gst_webkit_go_to_file_cb, (gpointer)object);
+    break;
+  case PROP_ENABLED:
+    GST_OBJECT_LOCK(src);
+    src->enabled = g_value_get_boolean(value);
+    GST_OBJECT_UNLOCK(src);
+    break;
+  case PROP_FPS:
+    GST_OBJECT_LOCK(src);
+    src->fps = g_value_get_int(value);
+    GST_OBJECT_UNLOCK(src);
+    break;
+  case PROP_WIDTH:
+    GST_OBJECT_LOCK(src);
+    src->width = g_value_get_int(value);
+    GST_OBJECT_UNLOCK(src);
+    break;
+  case PROP_HEIGHT:
+    GST_OBJECT_LOCK(src);
+    src->height = g_value_get_int(value);
+    GST_OBJECT_UNLOCK(src);
+    break;
+  default:
+    G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
+    break;
   }
 }
 
 static void
-gst_webkit_src_get_property (GObject * object, guint prop_id,
-    GValue * value, GParamSpec * pspec)
-{
-  GstWebkitSrc *filter = GST_WEBKIT_SRC (object);
+gst_webkit_src_get_property(GObject *object, guint prop_id,
+                            GValue *value, GParamSpec *pspec) {
+  GstWebkitSrc *filter = GST_WEBKIT_SRC(object);
 
   switch (prop_id) {
-    case PROP_URL:
-      g_value_set_string (value, filter->url);
-      break;
-	case PROP_URI:
-	  g_value_set_string (value, filter->url);
-	  break;
-      case PROP_ENABLED:
-        g_value_set_boolean(value, filter->enabled);
-        break;
-      case PROP_FPS:
-        g_value_set_int(value, filter->fps);
-        break;
-      case PROP_WIDTH:
-        g_value_set_int(value, filter->width);
-        break;
-      case PROP_HEIGHT:
-        g_value_set_int(value, filter->height);
-        break;
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-      break;
+  case PROP_URL:
+    g_value_set_string(value, filter->url);
+    break;
+  case PROP_URI:
+    g_value_set_string(value, filter->url);
+    break;
+  case PROP_ENABLED:
+    g_value_set_boolean(value, filter->enabled);
+    break;
+  case PROP_FPS:
+    g_value_set_int(value, filter->fps);
+    break;
+  case PROP_WIDTH:
+    g_value_set_int(value, filter->width);
+    break;
+  case PROP_HEIGHT:
+    g_value_set_int(value, filter->height);
+    break;
+  default:
+    G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
+    break;
   }
 }
 
 /* GstElement vmethod implementations */
-
 
 /* entry point to initialize the plug-in
  * initialize the plug-in itself
  * register the element factories and other features
  */
 static gboolean
-webkitsrc_init (GstPlugin * webkitsrc)
-{
+webkitsrc_init(GstPlugin *webkitsrc) {
   /* debug category for fltering log messages
    *
    * exchange the string 'Template webkitsrc' with your description
    */
-  GST_DEBUG_CATEGORY_INIT (gst_webkit_src_debug, "webkitsrc",
-      0, "Webkit SRC debugger init");
+  GST_DEBUG_CATEGORY_INIT(gst_webkit_src_debug, "webkitsrc",
+                          0, "Webkit SRC debugger init");
 
-  return gst_element_register (webkitsrc, "webkitsrc", GST_RANK_NONE,
-      GST_TYPE_WEBKIT_SRC);
+  return gst_element_register(webkitsrc, "webkitsrc", GST_RANK_NONE,
+                              GST_TYPE_WEBKIT_SRC);
 }
 
-
-
-
 static gboolean
-gst_webkit_src_start (GstBaseSrc * basesrc)
-{
+gst_webkit_src_start(GstBaseSrc *basesrc) {
   GstWebkitSrc *src;
 
-  src = GST_WEBKIT_SRC (basesrc);
+  src = GST_WEBKIT_SRC(basesrc);
 
-	
   gtk_window_set_default_size(GTK_WINDOW(src->window), src->width, src->height);
-//  gtk_window_set_default_size(GTK_WINDOW(src->window), 1280, 320);
+  //  gtk_window_set_default_size(GTK_WINDOW(src->window), 1280, 320);
   gtk_container_add(GTK_CONTAINER(src->window), GTK_WIDGET(src->web_view));
-  GST_DEBUG ("COLOR SET");
+  GST_DEBUG("COLOR SET");
 
-  GST_DEBUG ("Init size: %d x %d, FPS:  %d", src->width, src->height, src->fps);
+  GST_DEBUG("Init size: %d x %d, FPS:  %d", src->width, src->height, src->fps);
 
-  WebKitSettings *settings = webkit_settings_new ();
+  WebKitSettings *settings = webkit_settings_new();
   webkit_settings_set_auto_load_images(settings, TRUE);
   webkit_settings_set_enable_javascript(settings, TRUE);
   webkit_settings_set_enable_webgl(settings, FALSE);
@@ -599,63 +549,57 @@ gst_webkit_src_start (GstBaseSrc * basesrc)
   webkit_settings_set_enable_page_cache(settings, FALSE);
   webkit_settings_set_enable_accelerated_2d_canvas(settings, TRUE);
   webkit_settings_set_enable_write_console_messages_to_stdout(settings, TRUE);
-  webkit_settings_set_enable_plugins (settings, FALSE);
+  webkit_settings_set_enable_plugins(settings, FALSE);
   webkit_settings_set_hardware_acceleration_policy(settings, WEBKIT_HARDWARE_ACCELERATION_POLICY_NEVER);
-  webkit_web_view_set_settings (WEBKIT_WEB_VIEW(src->web_view), settings);
+  webkit_web_view_set_settings(WEBKIT_WEB_VIEW(src->web_view), settings);
 
-
-  src->data = malloc(4*(src->width)*(src->height)*sizeof(guint8));
-//  src->data = malloc(4*1280*720*sizeof(guint8));
+  src->data = malloc(4 * (src->width) * (src->height) * sizeof(guint8));
+  //  src->data = malloc(4*1280*720*sizeof(guint8));
 
   webkit_web_context_set_cache_model(webkit_web_context_get_default(), WEBKIT_CACHE_MODEL_DOCUMENT_VIEWER);
 
   gtk_widget_show_all(src->window);
 
-  memset(src->data, 0, (src->width)*(src->height)*4*sizeof(guint8));
+  memset(src->data, 0, (src->width) * (src->height) * 4 * sizeof(guint8));
   src->updated = TRUE;
-//  memset(src->data, 0, 1280*720*4*sizeof(guint8));
-  g_timeout_add( (src->fps>0)&&(src->fps<30)?1000/src->fps:1000 , gst_webkit_src_load_webkit_ready, (gpointer) src);
-
+  //  memset(src->data, 0, 1280*720*4*sizeof(guint8));
+  g_timeout_add((src->fps > 0) && (src->fps < 30) ? 1000 / src->fps : 1000, gst_webkit_src_load_webkit_ready, (gpointer)src);
 
   return TRUE;
 }
 
 static gboolean
-gst_webkit_src_stop (GstBaseSrc * basesrc)
-{
+gst_webkit_src_stop(GstBaseSrc *basesrc) {
   GstWebkitSrc *src;
 
-  src = GST_WEBKIT_SRC (basesrc);
+  src = GST_WEBKIT_SRC(basesrc);
 
-  GST_OBJECT_LOCK (src);
+  GST_OBJECT_LOCK(src);
   if (src->parent) {
-    gst_buffer_unref (src->parent);
+    gst_buffer_unref(src->parent);
     src->parent = NULL;
   }
 
   gtk_widget_destroy(GTK_WIDGET(src->web_view));
   gtk_widget_destroy(GTK_WINDOW(src->window));
   free(src->data);
-  GST_OBJECT_UNLOCK (src);
+  GST_OBJECT_UNLOCK(src);
 
   return TRUE;
 }
 
-
-
 static void
-gst_webkit_src_get_times (GstBaseSrc * basesrc, GstBuffer * buffer,
-    GstClockTime * start, GstClockTime * end)
-{
+gst_webkit_src_get_times(GstBaseSrc *basesrc, GstBuffer *buffer,
+                         GstClockTime *start, GstClockTime *end) {
   /* for live sources, sync on the timestamp of the buffer */
-  if (gst_base_src_is_live (basesrc)) {
-    GstClockTime timestamp = GST_BUFFER_DTS (buffer);
+  if (gst_base_src_is_live(basesrc)) {
+    GstClockTime timestamp = GST_BUFFER_DTS(buffer);
 
-    if (GST_CLOCK_TIME_IS_VALID (timestamp)) {
+    if (GST_CLOCK_TIME_IS_VALID(timestamp)) {
       /* get duration to calculate end time */
-      GstClockTime duration = GST_BUFFER_DURATION (buffer);
+      GstClockTime duration = GST_BUFFER_DURATION(buffer);
 
-      if (GST_CLOCK_TIME_IS_VALID (duration)) {
+      if (GST_CLOCK_TIME_IS_VALID(duration)) {
         *end = timestamp + duration;
       }
       *start = timestamp;
@@ -667,8 +611,7 @@ gst_webkit_src_get_times (GstBaseSrc * basesrc, GstBuffer * buffer,
 }
 
 static gboolean
-gst_webkit_src_do_seek (GstBaseSrc * bsrc, GstSegment * segment)
-{
+gst_webkit_src_do_seek(GstBaseSrc *bsrc, GstSegment *segment) {
   GstClockTime position;
   GstWebkitSrc *src;
 
@@ -679,29 +622,28 @@ gst_webkit_src_do_seek (GstBaseSrc * bsrc, GstSegment * segment)
 
   /* now move to the position indicated */
   if (src->info.fps_n) {
-    src->n_frames = gst_util_uint64_scale (position,
-        src->info.fps_n, src->info.fps_d * GST_SECOND);
+    src->n_frames = gst_util_uint64_scale(position,
+                                          src->info.fps_n, src->info.fps_d * GST_SECOND);
   } else {
     src->n_frames = 0;
   }
   src->accum_frames = 0;
   src->accum_rtime = 0;
   if (src->info.fps_n) {
-    src->running_time = gst_util_uint64_scale (src->n_frames,
-        src->info.fps_d * GST_SECOND, src->info.fps_n);
+    src->running_time = gst_util_uint64_scale(src->n_frames,
+                                              src->info.fps_d * GST_SECOND, src->info.fps_n);
   } else {
     /* FIXME : Not sure what to set here */
     src->running_time = 0;
   }
 
-  g_assert (src->running_time <= position);
+  g_assert(src->running_time <= position);
 
   return TRUE;
 }
 
 static gboolean
-gst_webkit_src_is_seekable (GstBaseSrc * basesrc)
-{
+gst_webkit_src_is_seekable(GstBaseSrc *basesrc) {
   return TRUE;
 }
 
@@ -718,7 +660,7 @@ gst_webkit_src_is_seekable (GstBaseSrc * basesrc)
  *
  * exchange the string 'Template webkitsrc' with your webkitsrc description
  */
-GST_PLUGIN_DEFINE (
+GST_PLUGIN_DEFINE(
     GST_VERSION_MAJOR,
     GST_VERSION_MINOR,
     webkitsrc,
@@ -727,5 +669,4 @@ GST_PLUGIN_DEFINE (
     VERSION,
     "LGPL",
     "Webkit",
-    "http://www.kalyzee.com/"
-)
+    "http://www.kalyzee.com/")
