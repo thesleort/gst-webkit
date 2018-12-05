@@ -89,6 +89,7 @@ enum
 {
   PROP_0,
   PROP_URL,
+  PROP_URI,
   PROP_ENABLED,
   PROP_FPS,
   PROP_WIDTH,
@@ -156,6 +157,10 @@ gst_webkit_src_class_init (GstWebkitSrcClass * klass)
 
   g_object_class_install_property (gobject_class, PROP_URL,
       g_param_spec_string ("url", "URL", "url page",
+          "", G_PARAM_READWRITE));
+
+  g_object_class_install_property (gobject_class, PROP_URI,
+      g_param_spec_string ("uri", "URI", "uri page",
           "", G_PARAM_READWRITE));
 
   g_object_class_install_property (gobject_class, PROP_ENABLED,
@@ -442,6 +447,32 @@ static gboolean gst_webkit_go_to_url_cb(gpointer object){
   return FALSE;
 }
 
+static gboolean gst_webkit_go_to_file_cb(gpointer object) {
+	char *buffer = NULL;
+	FILE *fp;
+	guint size = 0;
+
+	GstWebkitSrc *src = GST_WEBKIT_SRC(object);
+	GST_OBJECT_LOCK(src);
+
+	fp = fopen(src->url, "r");
+
+	fseek(fp, 0, SEEK_END);
+
+	rewind(fp);
+
+	buffer = malloc((size + 1) * sizeof(*buffer));
+
+	fread(buffer, size, 1, fp);
+
+	buffer[size] = '\0';
+
+	webkit_web_view_load_html(src->web_view, buffer, "/");
+	GST_OBJECT_UNLOCK(src);
+
+	return FALSE;
+}
+
 static void
 gst_webkit_src_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec)
@@ -457,6 +488,12 @@ gst_webkit_src_set_property (GObject * object, guint prop_id,
       g_idle_add(gst_webkit_go_to_url_cb, (gpointer) object);
 
       break;
+	case PROP_URI:
+	  GST_OBJECT_LOCK(src);
+	  src->url = g_value_dup_string(value);
+	  GST_OBJECT_UNLOCK(src);
+	  g_idle_add(gst_webkit_go_to_file_cb, (gpointer) object);
+	  break;
       case PROP_ENABLED:
         GST_OBJECT_LOCK(src);
         src->enabled = g_value_get_boolean(value);
@@ -493,6 +530,9 @@ gst_webkit_src_get_property (GObject * object, guint prop_id,
     case PROP_URL:
       g_value_set_string (value, filter->url);
       break;
+	case PROP_URI:
+	  g_value_set_string (value, filter->url);
+	  break;
       case PROP_ENABLED:
         g_value_set_boolean(value, filter->enabled);
         break;
