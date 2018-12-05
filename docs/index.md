@@ -32,7 +32,7 @@ You can use this gstreamer element to do :
 ### Compilation
 
 ```
-apt-get install libwebkit-dev libcairo-dev
+apt install libwebkit2gtk-4.0-dev libcairo2-dev
 ```
 
 ```
@@ -45,6 +45,10 @@ make
 
 ```
 sudo make install
+```
+
+```
+export GST_PLUGIN_PATH=${GST_PLUGIN_PATH}:/usr/local/lib/gstreamer-1.0
 ```
 
 ## Usage
