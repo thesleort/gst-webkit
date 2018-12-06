@@ -97,7 +97,7 @@ enum {
  *
  * describe the real formats here.
  */
-static GstStaticPadTemplate cap_720p25 = GST_STATIC_PAD_TEMPLATE("src",
+static GstStaticPadTemplate static_cap = GST_STATIC_PAD_TEMPLATE("src",
                                                                   GST_PAD_SRC,
                                                                   GST_PAD_ALWAYS,
                                                                   GST_STATIC_CAPS("video/x-raw,"
@@ -105,13 +105,6 @@ static GstStaticPadTemplate cap_720p25 = GST_STATIC_PAD_TEMPLATE("src",
                                                                                   "width=(int){1280},height=(int){720},"
                                                                                   "framerate=(fraction){25/1}"));
 
-static GstStaticPadTemplate cap_1080p30 = GST_STATIC_PAD_TEMPLATE("src",
-                                                                     GST_PAD_SRC,
-                                                                     GST_PAD_ALWAYS,
-                                                                     GST_STATIC_CAPS("video/x-raw,"
-                                                                                     "format=(string){RGBA},"
-                                                                                     "width=(int){1920},height=(int){1080},"
-                                                                                     "framerate=(fraction){25/1}"));
 
 #define gst_webkit_src_parent_class parent_class
 G_DEFINE_TYPE(GstWebkitSrc, gst_webkit_src, GST_TYPE_PUSH_SRC);
@@ -188,10 +181,7 @@ gst_webkit_src_class_init(GstWebkitSrcClass *klass) {
                                        "Troels Blicher Petersen <troels@newtec.dk>");
 
   gst_element_class_add_pad_template(gstelement_class,
-                                     gst_static_pad_template_get(&cap_720p25));
-
-  gst_element_class_add_pad_template(gstelement_class,
-                                     gst_static_pad_template_get(&cap_1080p30));
+                                     gst_static_pad_template_get(&static_cap));
 
   gstbase_src_class->is_seekable = GST_DEBUG_FUNCPTR(gst_webkit_src_is_seekable);
   gstbase_src_class->start = GST_DEBUG_FUNCPTR(gst_webkit_src_start);
