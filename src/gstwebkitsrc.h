@@ -80,6 +80,8 @@ struct _GstWebkitSrc {
   guint parentoffset;
 
   const gchar *url;
+  gchar *uri;
+  gchar **uri_buffer;
   WebKitWebView *web_view;
   GtkWidget *window;
 

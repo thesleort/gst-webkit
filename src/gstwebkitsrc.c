@@ -162,8 +162,8 @@ gst_webkit_src_class_init(GstWebkitSrcClass *klass) {
                                                        TRUE, G_PARAM_READWRITE));
 
   g_object_class_install_property(gobject_class, PROP_FPS,
-                                  g_param_spec_int("fps", "FPS", "frames per second", 1, 30,
-                                                   1, G_PARAM_READWRITE));
+                                  g_param_spec_int("fps", "FPS", "frames per second", 1, 60,
+                                                   30, G_PARAM_READWRITE));
 
   g_object_class_install_property(gobject_class, PROP_WIDTH,
                                   g_param_spec_int("width", "width", "browser width", 1, 1920,
@@ -177,7 +177,7 @@ gst_webkit_src_class_init(GstWebkitSrcClass *klass) {
                                        "WebkitSrc",
                                        "Html / css / js renderer element",
                                        "Html / css / js renderer element",
-                                       "Ludovic Bouguerra <ludovic.bouguerra@kalyzee.com>");
+                                       "Troels Blicher Petersen <troels@newtec.dk>");
 
   gst_element_class_add_pad_template(gstelement_class,
                                      gst_static_pad_template_get(&src_factory));
@@ -355,6 +355,7 @@ static gboolean gst_webkit_src_load_webkit_ready(gpointer psrc) {
   } else {
     memset(src->data, 0, (src->width) * (src->height) * 4 * sizeof(guint8));
     //      memset(src->data, 0, 1280*720*4*sizeof(guint8));
+    GST_DEBUG("Not enabled");
   }
 
   GST_OBJECT_UNLOCK(src);
@@ -413,12 +414,18 @@ static gboolean gst_webkit_go_to_file_cb(gpointer object) {
 
   GstWebkitSrc *src = GST_WEBKIT_SRC(object);
   GST_OBJECT_LOCK(src);
+  GST_DEBUG("Reading file");
 
   fp = fopen(src->url, "r");
 
   fseek(fp, 0, SEEK_END);
 
-  rewind(fp);
+  size = ftell(fp);
+  // rewind(fp);
+  fseek(fp, 0, SEEK_SET);
+
+
+  GST_DEBUG("File size: %i", size);
 
   buffer = malloc((size + 1) * sizeof(*buffer));
 
@@ -426,7 +433,12 @@ static gboolean gst_webkit_go_to_file_cb(gpointer object) {
 
   buffer[size] = '\0';
 
+  src->uri_buffer = &buffer;
+
   webkit_web_view_load_html(src->web_view, buffer, "/");
+
+  GST_DEBUG("HTML FILE:\n%s", buffer);
+  // src->enabled = TRUE;
   GST_OBJECT_UNLOCK(src);
 
   return FALSE;
@@ -435,9 +447,9 @@ static gboolean gst_webkit_go_to_file_cb(gpointer object) {
 static void
 gst_webkit_src_set_property(GObject *object, guint prop_id,
                             const GValue *value, GParamSpec *pspec) {
-  //  GST_DEBUG ("Prop set: ID: %d", prop_id);
+   GST_DEBUG ("Prop set: ID: %d", prop_id);
   GstWebkitSrc *src = GST_WEBKIT_SRC(object);
-
+  // GST_DEBUG("Prop id: %i", prop_id);
   switch (prop_id) {
   case PROP_URL:
     GST_OBJECT_LOCK(src);
@@ -476,6 +488,13 @@ gst_webkit_src_set_property(GObject *object, guint prop_id,
     G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
     break;
   }
+}
+
+static char* remove_comma(char *string) {
+  char *m_string;
+  m_string = g_strsplit(string, ",", 0);
+
+  return m_string[0];
 }
 
 static void
@@ -540,6 +559,7 @@ gst_webkit_src_start(GstBaseSrc *basesrc) {
 
   GST_DEBUG("Init size: %d x %d, FPS:  %d", src->width, src->height, src->fps);
 
+
   WebKitSettings *settings = webkit_settings_new();
   webkit_settings_set_auto_load_images(settings, TRUE);
   webkit_settings_set_enable_javascript(settings, TRUE);
@@ -560,10 +580,13 @@ gst_webkit_src_start(GstBaseSrc *basesrc) {
 
   gtk_widget_show_all(src->window);
 
+
+  GST_DEBUG("%s", src->uri_buffer);
+
   memset(src->data, 0, (src->width) * (src->height) * 4 * sizeof(guint8));
   src->updated = TRUE;
   //  memset(src->data, 0, 1280*720*4*sizeof(guint8));
-  g_timeout_add((src->fps > 0) && (src->fps < 30) ? 1000 / src->fps : 1000, gst_webkit_src_load_webkit_ready, (gpointer)src);
+  g_timeout_add((src->fps > 0) && (src->fps < 61) ? 1000 / src->fps : 1000, gst_webkit_src_load_webkit_ready, (gpointer)src);
 
   return TRUE;
 }

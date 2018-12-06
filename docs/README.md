@@ -143,8 +143,14 @@ GST_DEBUG=*webkit*:5 gst-launch-1.0 videotestsrc ! video/x-raw, format=RGBA, wid
 ```
 
 
-
+```
 GST_DEBUG=*webkit*:5 gst-launch-1.0 videotestsrc ! video/x-raw, format=RGBA, width=1280, height=720 ! mixer.sink_1   webkitsrc  url="http://localhost/news/" ! video/x-raw, format=RGBA, width=1280, height=720 ! mixer.sink_0   videomixer name=mixer sink_0::zorder=1 sink_1::zorder=0 !   videoconvert ! autovideosink sync=FALSE
+```
 
-
+```
 GST_DEBUG=*webkit*:5 gst-launch-1.0 videotestsrc ! video/x-raw, format=RGBA, width=1280, height=720 ! mixer.sink_1   webkitsrc  url="http://localhost/news/" ! video/x-raw, format=RGBA, width=1280, height=720 ! alpha method=green ! mixer.sink_0   videomixer name=mixer sink_0::zorder=0 sink_1::zorder=1 !   videoconvert ! autovideosink sync=FALSE
+```
+
+```
+GST_DEBUG=*webkit*:5 gst-launch-1.0 videotestsrc ! video/x-raw, format=RGBA, width=1280, height=720 ! mixer.sink_0   webkitsrc  uri="tests/test.html" width=1280 height=720 enabled=TRUE ! video/x-raw, format=RGBA, width=1280, height=720 ! alpha method=green ! mixer.sink_1   videomixer name=mixer sink_0::zorder=0 sink_1::zorder=1 !   videoconvert ! autovideosink sync=FALSE
+```
