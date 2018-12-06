@@ -97,13 +97,21 @@ enum {
  *
  * describe the real formats here.
  */
-static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE("src",
+static GstStaticPadTemplate cap_720p25 = GST_STATIC_PAD_TEMPLATE("src",
                                                                   GST_PAD_SRC,
                                                                   GST_PAD_ALWAYS,
                                                                   GST_STATIC_CAPS("video/x-raw,"
                                                                                   "format=(string){RGBA},"
                                                                                   "width=(int){1280},height=(int){720},"
                                                                                   "framerate=(fraction){25/1}"));
+
+static GstStaticPadTemplate cap_1080p30 = GST_STATIC_PAD_TEMPLATE("src",
+                                                                     GST_PAD_SRC,
+                                                                     GST_PAD_ALWAYS,
+                                                                     GST_STATIC_CAPS("video/x-raw,"
+                                                                                     "format=(string){RGBA},"
+                                                                                     "width=(int){1920},height=(int){1080},"
+                                                                                     "framerate=(fraction){25/1}"));
 
 #define gst_webkit_src_parent_class parent_class
 G_DEFINE_TYPE(GstWebkitSrc, gst_webkit_src, GST_TYPE_PUSH_SRC);
@@ -180,7 +188,10 @@ gst_webkit_src_class_init(GstWebkitSrcClass *klass) {
                                        "Troels Blicher Petersen <troels@newtec.dk>");
 
   gst_element_class_add_pad_template(gstelement_class,
-                                     gst_static_pad_template_get(&src_factory));
+                                     gst_static_pad_template_get(&cap_720p25));
+
+  gst_element_class_add_pad_template(gstelement_class,
+                                     gst_static_pad_template_get(&cap_1080p30));
 
   gstbase_src_class->is_seekable = GST_DEBUG_FUNCPTR(gst_webkit_src_is_seekable);
   gstbase_src_class->start = GST_DEBUG_FUNCPTR(gst_webkit_src_start);
@@ -424,7 +435,6 @@ static gboolean gst_webkit_go_to_file_cb(gpointer object) {
   // rewind(fp);
   fseek(fp, 0, SEEK_SET);
 
-
   GST_DEBUG("File size: %i", size);
 
   buffer = malloc((size + 1) * sizeof(*buffer));
@@ -447,7 +457,7 @@ static gboolean gst_webkit_go_to_file_cb(gpointer object) {
 static void
 gst_webkit_src_set_property(GObject *object, guint prop_id,
                             const GValue *value, GParamSpec *pspec) {
-   GST_DEBUG ("Prop set: ID: %d", prop_id);
+  GST_DEBUG("Prop set: ID: %d", prop_id);
   GstWebkitSrc *src = GST_WEBKIT_SRC(object);
   // GST_DEBUG("Prop id: %i", prop_id);
   switch (prop_id) {
@@ -490,7 +500,7 @@ gst_webkit_src_set_property(GObject *object, guint prop_id,
   }
 }
 
-static char* remove_comma(char *string) {
+static char *remove_comma(char *string) {
   char *m_string;
   m_string = g_strsplit(string, ",", 0);
 
@@ -559,7 +569,6 @@ gst_webkit_src_start(GstBaseSrc *basesrc) {
 
   GST_DEBUG("Init size: %d x %d, FPS:  %d", src->width, src->height, src->fps);
 
-
   WebKitSettings *settings = webkit_settings_new();
   webkit_settings_set_auto_load_images(settings, TRUE);
   webkit_settings_set_enable_javascript(settings, TRUE);
@@ -579,7 +588,6 @@ gst_webkit_src_start(GstBaseSrc *basesrc) {
   webkit_web_context_set_cache_model(webkit_web_context_get_default(), WEBKIT_CACHE_MODEL_DOCUMENT_VIEWER);
 
   gtk_widget_show_all(src->window);
-
 
   GST_DEBUG("%s", src->uri_buffer);
 
@@ -683,6 +691,7 @@ gst_webkit_src_is_seekable(GstBaseSrc *basesrc) {
  *
  * exchange the string 'Template webkitsrc' with your webkitsrc description
  */
+#ifndef __INTELLISENSE__
 GST_PLUGIN_DEFINE(
     GST_VERSION_MAJOR,
     GST_VERSION_MINOR,
@@ -693,3 +702,4 @@ GST_PLUGIN_DEFINE(
     "LGPL",
     "Webkit",
     "http://www.kalyzee.com/")
+#endif
