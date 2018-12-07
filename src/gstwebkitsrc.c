@@ -98,13 +98,12 @@ enum {
  * describe the real formats here.
  */
 static GstStaticPadTemplate static_cap = GST_STATIC_PAD_TEMPLATE("src",
-                                                                  GST_PAD_SRC,
-                                                                  GST_PAD_ALWAYS,
-                                                                  GST_STATIC_CAPS("video/x-raw,"
-                                                                                  "format=(string){RGBA},"
-                                                                                  "width=(int){1280},height=(int){720},"
-                                                                                  "framerate=(fraction){25/1}"));
-
+                                                                 GST_PAD_SRC,
+                                                                 GST_PAD_ALWAYS,
+                                                                 GST_STATIC_CAPS("video/x-raw,"
+                                                                                 "format=(string){RGBA},"
+                                                                                 "width=(int){1280},height=(int){720},"
+                                                                                 "framerate=(fraction){25/1}"));
 
 #define gst_webkit_src_parent_class parent_class
 G_DEFINE_TYPE(GstWebkitSrc, gst_webkit_src, GST_TYPE_PUSH_SRC);
@@ -150,6 +149,15 @@ gst_webkit_src_class_init(GstWebkitSrcClass *klass) {
   gobject_class->set_property = gst_webkit_src_set_property;
   gobject_class->get_property = gst_webkit_src_get_property;
 
+  gstbase_src_class->is_seekable = GST_DEBUG_FUNCPTR(gst_webkit_src_is_seekable);
+  gstbase_src_class->start = GST_DEBUG_FUNCPTR(gst_webkit_src_start);
+  gstbase_src_class->stop = GST_DEBUG_FUNCPTR(gst_webkit_src_stop);
+  gstpush_src_class->fill = GST_DEBUG_FUNCPTR(gst_webkit_src_fill);
+  gstbase_src_class->set_caps = GST_DEBUG_FUNCPTR(gst_webkit_src_setcaps);
+  gstbase_src_class->query = GST_DEBUG_FUNCPTR(gst_webkit_src_query);
+  gstbase_src_class->get_times = GST_DEBUG_FUNCPTR(gst_webkit_src_get_times);
+  gstbase_src_class->do_seek = GST_DEBUG_FUNCPTR(gst_webkit_src_do_seek);
+
   g_object_class_install_property(gobject_class, PROP_URL,
                                   g_param_spec_string("url", "URL", "url page",
                                                       "", G_PARAM_READWRITE));
@@ -160,37 +168,29 @@ gst_webkit_src_class_init(GstWebkitSrcClass *klass) {
 
   g_object_class_install_property(gobject_class, PROP_ENABLED,
                                   g_param_spec_boolean("enabled", "enabled", "enabled",
-                                                       TRUE, G_PARAM_READWRITE));
+                                                       TRUE, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 
   g_object_class_install_property(gobject_class, PROP_FPS,
-                                  g_param_spec_int("fps", "FPS", "frames per second", 1, 60,
-                                                   30, G_PARAM_READWRITE));
+                                  g_param_spec_int("fps", "FPS", "frames per second", 30, 60,
+                                                   30, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 
   g_object_class_install_property(gobject_class, PROP_WIDTH,
                                   g_param_spec_int("width", "width", "browser width", 1, 1920,
-                                                   1280, G_PARAM_READWRITE));
+                                                   1280, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 
   g_object_class_install_property(gobject_class, PROP_HEIGHT,
                                   g_param_spec_int("height", "height", "browser height", 1, 1080,
-                                                   720, G_PARAM_READWRITE));
+                                                   720, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 
   gst_element_class_set_details_simple(gstelement_class,
                                        "WebkitSrc",
                                        "Html / css / js renderer element",
                                        "Html / css / js renderer element",
-                                       "Troels Blicher Petersen <troels@newtec.dk>");
+                                       "Troels Blicher Petersen <troels@newtec.dk>, Ludovic Bouguerra <ludovic.bouguerra@kalyzee.com>");
 
   gst_element_class_add_pad_template(gstelement_class,
                                      gst_static_pad_template_get(&static_cap));
 
-  gstbase_src_class->is_seekable = GST_DEBUG_FUNCPTR(gst_webkit_src_is_seekable);
-  gstbase_src_class->start = GST_DEBUG_FUNCPTR(gst_webkit_src_start);
-  gstbase_src_class->stop = GST_DEBUG_FUNCPTR(gst_webkit_src_stop);
-  gstpush_src_class->fill = GST_DEBUG_FUNCPTR(gst_webkit_src_fill);
-  gstbase_src_class->set_caps = GST_DEBUG_FUNCPTR(gst_webkit_src_setcaps);
-  gstbase_src_class->query = GST_DEBUG_FUNCPTR(gst_webkit_src_query);
-  gstbase_src_class->get_times = GST_DEBUG_FUNCPTR(gst_webkit_src_get_times);
-  gstbase_src_class->do_seek = GST_DEBUG_FUNCPTR(gst_webkit_src_do_seek);
 }
 
 static gboolean
