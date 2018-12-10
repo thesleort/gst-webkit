@@ -70,6 +70,7 @@
 #endif
 
 #include <gst/gst.h>
+#include <libgen.h>
 
 #include <stdlib.h>
 #include "gstwebkitsrc.h"
@@ -171,7 +172,7 @@ gst_webkit_src_class_init(GstWebkitSrcClass *klass) {
                                                        TRUE, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 
   g_object_class_install_property(gobject_class, PROP_FPS,
-                                  g_param_spec_int("fps", "FPS", "frames per second", 30, 60,
+                                  g_param_spec_int("fps", "FPS", "frames per second", 1, 60,
                                                    30, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 
   g_object_class_install_property(gobject_class, PROP_WIDTH,
@@ -412,6 +413,7 @@ static gboolean gst_webkit_go_to_file_cb(gpointer object) {
   char *buffer = NULL;
   FILE *fp;
   guint size = 0;
+  char *dir;
 
   GstWebkitSrc *src = GST_WEBKIT_SRC(object);
   GST_OBJECT_LOCK(src);
@@ -435,7 +437,15 @@ static gboolean gst_webkit_go_to_file_cb(gpointer object) {
 
   src->uri_buffer = &buffer;
 
-  webkit_web_view_load_html(src->web_view, buffer, "/");
+  dir = dirname(realpath(src->url, NULL));
+
+  GST_DEBUG("Loading HTML...");
+
+  GST_DEBUG("Path: %s", dir);
+
+  webkit_web_view_load_html(src->web_view, buffer, dir);
+ 
+//   webkit_webview_get_
 
   GST_DEBUG("HTML FILE:\n%s", buffer);
   // src->enabled = TRUE;
@@ -562,7 +572,7 @@ gst_webkit_src_start(GstBaseSrc *basesrc) {
   WebKitSettings *settings = webkit_settings_new();
   webkit_settings_set_auto_load_images(settings, TRUE);
   webkit_settings_set_enable_javascript(settings, TRUE);
-  webkit_settings_set_enable_webgl(settings, FALSE);
+  webkit_settings_set_enable_webgl(settings, TRUE);
   webkit_settings_set_allow_modal_dialogs(settings, FALSE);
   webkit_settings_set_javascript_can_access_clipboard(settings, FALSE);
   webkit_settings_set_enable_page_cache(settings, FALSE);
