@@ -421,6 +421,12 @@ static gboolean gst_webkit_go_to_file_cb(gpointer object) {
 
   fp = fopen(src->url, "r");
 
+  if(fp == NULL) {
+    GST_DEBUG("File %s not found", src->url);
+    GST_OBJECT_UNLOCK(src);
+    return;
+  }
+
   fseek(fp, 0, SEEK_END);
 
   size = ftell(fp);
