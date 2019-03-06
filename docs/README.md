@@ -3,24 +3,6 @@ layout: doc
 title: Gst Webkit documentation
 ---
 
-# Gst Webkit
-
-Easiest way to build overlays with Gstreamer
-
-![](imgs/principes.png)
-
-Our goal is to develop a Webkit mixer providing javascript interactions.
-
-![](imgs/principes-surface.png)
-
-
-Using webkit you can use all css animations, all javascript interactions. You don't need to code complex pipelines in c / python to do that.
-
-
-You can use this gstreamer element to do :
-
-![](imgs/usages.png)
-
 ## Installation
 
 ### Requirements
