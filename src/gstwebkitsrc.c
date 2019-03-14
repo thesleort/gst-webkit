@@ -449,6 +449,11 @@ static gboolean gst_webkit_go_to_file_cb(gpointer object) {
 
   GST_DEBUG("Path: %s", dir);
 
+  char *buf[100];
+  sprintf(buf, "file:/%s\n", dir);
+
+  printf("%s",buf);
+
   webkit_web_view_load_html(src->web_view, buffer, dir);
  
 //   webkit_webview_get_
