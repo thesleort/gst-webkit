@@ -28,7 +28,8 @@
                 "/usr/lib/x86_64-linux-gnu/gtkmm-3.0/include",
                 "/usr/include/pangomm-1.4",
                 "/usr/include/atkmm-1.6",
-                "/usr/include/atk-1.0"
+                "/usr/include/atk-1.0",
+                "/usr/include/webkitgtk-4.0/"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

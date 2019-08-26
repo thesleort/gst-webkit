@@ -450,11 +450,17 @@ static gboolean gst_webkit_go_to_file_cb(gpointer object) {
   GST_DEBUG("Path: %s", dir);
 
   char *buf[100];
-  sprintf(buf, "file:/%s\n", dir);
+  sprintf(buf, "file://%s/%s", dir, src->url);
 
-  printf("%s",buf);
+  printf("%s\n", buf);
+  printf("%s\n", buffer);
 
-  webkit_web_view_load_html(src->web_view, buffer, dir);
+
+  webkit_web_view_load_html(src->web_view, buffer, buf);
+
+  printf("%s\n", webkit_web_view_get_uri(src->web_view));
+
+  // printf(webkit_settings_get)
  
 //   webkit_webview_get_
 
@@ -569,6 +575,7 @@ webkitsrc_init(GstPlugin *webkitsrc) {
 
 static gboolean
 gst_webkit_src_start(GstBaseSrc *basesrc) {
+  printf("Setting settings\n");
   GstWebkitSrc *src;
 
   src = GST_WEBKIT_SRC(basesrc);
@@ -586,10 +593,12 @@ gst_webkit_src_start(GstBaseSrc *basesrc) {
   webkit_settings_set_enable_webgl(settings, TRUE);
   webkit_settings_set_allow_modal_dialogs(settings, FALSE);
   webkit_settings_set_javascript_can_access_clipboard(settings, FALSE);
+  webkit_settings_set_allow_file_access_from_file_urls(settings, TRUE);
+  webkit_settings_set_allow_universal_access_from_file_urls(settings, TRUE);
   webkit_settings_set_enable_page_cache(settings, FALSE);
-  webkit_settings_set_enable_accelerated_2d_canvas(settings, TRUE);
+  webkit_settings_set_enable_accelerated_2d_canvas(settings, FALSE);
   webkit_settings_set_enable_write_console_messages_to_stdout(settings, TRUE);
-  webkit_settings_set_enable_plugins(settings, FALSE);
+  webkit_settings_set_enable_plugins(settings, TRUE);
   webkit_settings_set_hardware_acceleration_policy(settings, WEBKIT_HARDWARE_ACCELERATION_POLICY_NEVER);
   webkit_web_view_set_settings(WEBKIT_WEB_VIEW(src->web_view), settings);
 
